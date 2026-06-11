@@ -88,8 +88,8 @@ try {
 
     $shell = New-Object -ComObject WScript.Shell
     $sc = $shell.CreateShortcut("$desktop\Spotify Launcher.lnk")
-    $sc.TargetPath       = "wscript.exe"
-    $sc.Arguments        = "`"$installDir\launcher.vbs`""
+    $sc.TargetPath       = "C:\Windows\System32\wscript.exe"
+    $sc.Arguments        = "$installDir\launcher.vbs"
     $sc.WorkingDirectory = $installDir
     $sc.IconLocation     = $iconLocation
     $sc.WindowStyle      = 1
