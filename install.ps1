@@ -77,7 +77,28 @@ if ($alwaysOn) {
 
 Write-Host "  Done." -ForegroundColor Green
 
-# ── 3. Verify CoreAudio interop ───────────────────────────────────────────────
+# ── 3. Desktop shortcut ──────────────────────────────────────────────────────
+Write-Host "Creating Desktop shortcut ..."
+try {
+    $desktop      = [Environment]::GetFolderPath('Desktop')
+    $spotifyExe   = "$env:LOCALAPPDATA\Microsoft\WindowsApps\Spotify.exe"
+    if (-not (Test-Path $spotifyExe)) { $spotifyExe = "$env:APPDATA\Spotify\Spotify.exe" }
+    $iconLocation = if (Test-Path $spotifyExe) { "$spotifyExe,0" } else { "powershell.exe,0" }
+
+    $shell = New-Object -ComObject WScript.Shell
+    $sc = $shell.CreateShortcut("$desktop\Spotify.lnk")
+    $sc.TargetPath       = "powershell.exe"
+    $sc.Arguments        = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$installDir\SpotifyLauncher.ps1`""
+    $sc.WorkingDirectory = $installDir
+    $sc.IconLocation     = $iconLocation
+    $sc.WindowStyle      = 7
+    $sc.Save()
+    Write-Host "  Done — Spotify.lnk on Desktop." -ForegroundColor Green
+} catch {
+    Write-Host "  Could not create shortcut: $_" -ForegroundColor Yellow
+}
+
+# ── 4. Verify CoreAudio interop ───────────────────────────────────────────────
 Write-Host ""
 Write-Host "Running CoreAudio verification (Spotify does not need to be open) ..."
 try {
@@ -89,7 +110,7 @@ try {
     Write-Host "  The muter may still work — muting is skipped if no Spotify audio session exists."
 }
 
-# ── 4. Summary ────────────────────────────────────────────────────────────────
+# ── 5. Summary ────────────────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
 Write-Host " Installation complete!" -ForegroundColor Green
