@@ -30,7 +30,7 @@ A small watcher starts automatically at logon (a hidden shortcut in your Startup
 ### Mode 2 — Manual
 No auto-start. The muter only runs when you open Spotify through the **"Spotify Launcher"** desktop shortcut, which opens Spotify and starts the muter together. Use it instead of the regular Spotify shortcut.
 
-> Both modes are window-free — shortcuts launch PowerShell hidden via `conhost --headless`, so nothing flashes on screen.
+> Both modes run hidden — shortcuts launch PowerShell with `-WindowStyle Hidden`, so no console window stays on screen.
 
 > **Execution policy error?**
 > Run this once, then retry:
@@ -46,7 +46,7 @@ No auto-start. The muter only runs when you open Spotify through the **"Spotify 
 
 **Single instance:** A named mutex prevents duplicate processes — launching again while the muter is already running is a harmless no-op.
 
-**Hidden execution:** Shortcuts run PowerShell through `conhost --headless`, and the muter is spawned with `-WindowStyle Hidden`, so no console window ever appears.
+**Hidden execution:** Shortcuts run PowerShell with `-WindowStyle Hidden`, and the muter is spawned the same way, so no console window stays on screen.
 
 ## Stats
 

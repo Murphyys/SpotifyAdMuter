@@ -37,13 +37,13 @@ Copy-Item "$srcDir\SpotifyWatcher.ps1"  "$installDir\SpotifyWatcher.ps1"  -Force
 Write-Host "  Done." -ForegroundColor Green
 
 # Shared helper: create a hidden shortcut that runs a script via conhost --headless
-# (runs PowerShell with no visible console window, and no AV-prone .vbs wrapper).
+# (runs PowerShell with the window hidden, and no AV-prone .vbs wrapper).
 function New-HiddenShortcut {
     param([string]$Path, [string]$ScriptName, [string]$IconLocation)
     $shell = New-Object -ComObject WScript.Shell
     $sc = $shell.CreateShortcut($Path)
-    $sc.TargetPath       = "$env:WINDIR\System32\conhost.exe"
-    $sc.Arguments        = "--headless powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$installDir\$ScriptName`""
+    $sc.TargetPath       = "$env:WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe"
+    $sc.Arguments        = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$installDir\$ScriptName`""
     $sc.WorkingDirectory = $installDir
     if ($IconLocation) { $sc.IconLocation = $IconLocation }
     $sc.WindowStyle      = 7
