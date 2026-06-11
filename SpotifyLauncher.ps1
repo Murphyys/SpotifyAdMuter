@@ -10,7 +10,10 @@ $classicExe = "$env:APPDATA\Spotify\Spotify.exe"
 if ((Test-Path $classicExe) -and (Get-Item $classicExe).Length -gt 0) {
     Start-Process $classicExe
 } elseif (Test-Path $storeStub) {
-    Start-Process "spotify:"
+    $pkg = Get-AppxPackage -Name "*Spotify*" -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($pkg) {
+        Start-Process "explorer.exe" -ArgumentList "shell:AppsFolder\$($pkg.PackageFamilyName)!Spotify"
+    }
 } else {
     Add-Type -AssemblyName System.Windows.Forms
     [System.Windows.Forms.MessageBox]::Show('Spotify not found on this machine.', 'Spotify AdMuter') | Out-Null
