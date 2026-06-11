@@ -17,7 +17,9 @@ if ((Test-Path $classicExe) -and (Get-Item $classicExe).Length -gt 0) {
     exit 1
 }
 
-for ($i = 0; $i -lt 30; $i++) {
+Start-Sleep -Seconds 2
+
+for ($i = 0; $i -lt 60; $i++) {
     if (Get-Process -Name Spotify -ErrorAction SilentlyContinue) { break }
     Start-Sleep -Milliseconds 500
 }

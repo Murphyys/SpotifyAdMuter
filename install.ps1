@@ -87,14 +87,14 @@ try {
     $iconLocation = if (Test-Path $spotifyExe) { "$spotifyExe,0" } else { "powershell.exe,0" }
 
     $shell = New-Object -ComObject WScript.Shell
-    $sc = $shell.CreateShortcut("$desktop\Spotify AdMuter.lnk")
+    $sc = $shell.CreateShortcut("$desktop\Launcher.lnk")
     $sc.TargetPath       = "wscript.exe"
     $sc.Arguments        = "`"$installDir\launcher.vbs`""
     $sc.WorkingDirectory = $installDir
     $sc.IconLocation     = $iconLocation
     $sc.WindowStyle      = 1
     $sc.Save()
-    Write-Host "  Done — 'Spotify AdMuter' shortcut on Desktop." -ForegroundColor Green
+    Write-Host "  Done — 'Launcher' shortcut on Desktop." -ForegroundColor Green
 } catch {
     Write-Host "  Could not create shortcut: $_" -ForegroundColor Yellow
 }
