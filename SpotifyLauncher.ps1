@@ -1,22 +1,21 @@
 # SpotifyLauncher.ps1
-# Opens Spotify, waits for its process to appear, then starts the ad-muter
-# watcher (which exits immediately if Spotify isn't running).
-# Target of the "Spotify AdMuter" Start Menu shortcut.
+# Opens Spotify, waits for its process to appear, then starts the ad-muter.
+# Target of the Desktop shortcut (via launcher.vbs).
 
-# Microsoft Store version first, then the classic desktop installer location
-$spotifyExe = @(
-    "$env:LOCALAPPDATA\Microsoft\WindowsApps\Spotify.exe",
-    "$env:APPDATA\Spotify\Spotify.exe"
-) | Where-Object { Test-Path $_ } | Select-Object -First 1
+# Microsoft Store version is a 0-byte stub — launch via URI instead.
+# Classic installer registers the same spotify: protocol, so this works for both.
+$storeStub  = "$env:LOCALAPPDATA\Microsoft\WindowsApps\Spotify.exe"
+$classicExe = "$env:APPDATA\Spotify\Spotify.exe"
 
-if (-not $spotifyExe) {
-    [System.Windows.Forms.MessageBox] | Out-Null
+if ((Test-Path $classicExe) -and (Get-Item $classicExe).Length -gt 0) {
+    Start-Process $classicExe
+} elseif (Test-Path $storeStub) {
+    Start-Process "spotify:"
+} else {
     Add-Type -AssemblyName System.Windows.Forms
     [System.Windows.Forms.MessageBox]::Show('Spotify not found on this machine.', 'Spotify AdMuter') | Out-Null
     exit 1
 }
-
-Start-Process $spotifyExe
 
 for ($i = 0; $i -lt 30; $i++) {
     if (Get-Process -Name Spotify -ErrorAction SilentlyContinue) { break }

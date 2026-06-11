@@ -34,6 +34,7 @@ if (-not (Test-Path $installDir)) {
 }
 Copy-Item "$srcDir\SpotifyAdMuter.ps1"  "$installDir\SpotifyAdMuter.ps1"  -Force
 Copy-Item "$srcDir\SpotifyLauncher.ps1" "$installDir\SpotifyLauncher.ps1" -Force
+Copy-Item "$srcDir\launcher.vbs"        "$installDir\launcher.vbs"        -Force
 Write-Host "  Done." -ForegroundColor Green
 
 # ── 2. Register scheduled task ────────────────────────────────────────────────
@@ -87,11 +88,11 @@ try {
 
     $shell = New-Object -ComObject WScript.Shell
     $sc = $shell.CreateShortcut("$desktop\Spotify.lnk")
-    $sc.TargetPath       = "powershell.exe"
-    $sc.Arguments        = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$installDir\SpotifyLauncher.ps1`""
+    $sc.TargetPath       = "wscript.exe"
+    $sc.Arguments        = "`"$installDir\launcher.vbs`""
     $sc.WorkingDirectory = $installDir
     $sc.IconLocation     = $iconLocation
-    $sc.WindowStyle      = 7
+    $sc.WindowStyle      = 1
     $sc.Save()
     Write-Host "  Done — Spotify.lnk on Desktop." -ForegroundColor Green
 } catch {
