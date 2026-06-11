@@ -12,7 +12,22 @@ Write-Host "SpotifyAdMuter Installer" -ForegroundColor Cyan
 Write-Host "========================" -ForegroundColor Cyan
 Write-Host ""
 
+# ── 0. Choose mode ────────────────────────────────────────────────────────────
+Write-Host "Choose install mode:"
+Write-Host ""
+Write-Host "  [1] Always-on   — starts automatically at logon and every 5 minutes"
+Write-Host "                    Spotify opens normally, muter runs in the background"
+Write-Host ""
+Write-Host "  [2] Manual      — only runs when you open Spotify via SpotifyLauncher.ps1"
+Write-Host "                    No auto-start; you control when it runs"
+Write-Host ""
+do {
+    $choice = Read-Host "Enter 1 or 2"
+} while ($choice -ne '1' -and $choice -ne '2')
+$alwaysOn = ($choice -eq '1')
+
 # ── 1. Copy scripts to stable install location ────────────────────────────────
+Write-Host ""
 Write-Host "Copying files to $installDir ..."
 if (-not (Test-Path $installDir)) {
     New-Item -ItemType Directory -Path $installDir | Out-Null
@@ -21,15 +36,12 @@ Copy-Item "$srcDir\SpotifyAdMuter.ps1"  "$installDir\SpotifyAdMuter.ps1"  -Force
 Copy-Item "$srcDir\SpotifyLauncher.ps1" "$installDir\SpotifyLauncher.ps1" -Force
 Write-Host "  Done." -ForegroundColor Green
 
-# ── 2. Register / update scheduled task ──────────────────────────────────────
+# ── 2. Register scheduled task ────────────────────────────────────────────────
 Write-Host "Registering scheduled task '$taskName' ..."
 
 $action = New-ScheduledTaskAction `
     -Execute  'conhost.exe' `
     -Argument "--headless powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$installDir\SpotifyAdMuter.ps1`""
-
-$triggerLogon  = New-ScheduledTaskTrigger -AtLogOn
-$triggerRepeat = New-ScheduledTaskTrigger -RepetitionInterval (New-TimeSpan -Minutes 5) -Once -At (Get-Date)
 
 $settings = New-ScheduledTaskSettingsSet `
     -MultipleInstances IgnoreNew `
@@ -44,12 +56,24 @@ $existing = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
 if ($existing) {
     Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
 }
-Register-ScheduledTask `
-    -TaskName  $taskName `
-    -Action    $action `
-    -Trigger   @($triggerLogon, $triggerRepeat) `
-    -Settings  $settings `
-    -Principal $principal | Out-Null
+
+if ($alwaysOn) {
+    $triggerLogon  = New-ScheduledTaskTrigger -AtLogOn
+    $triggerRepeat = New-ScheduledTaskTrigger -RepetitionInterval (New-TimeSpan -Minutes 5) -Once -At (Get-Date)
+    Register-ScheduledTask `
+        -TaskName  $taskName `
+        -Action    $action `
+        -Trigger   @($triggerLogon, $triggerRepeat) `
+        -Settings  $settings `
+        -Principal $principal | Out-Null
+} else {
+    # Manual mode: task registered but no triggers — SpotifyLauncher calls it on demand
+    Register-ScheduledTask `
+        -TaskName  $taskName `
+        -Action    $action `
+        -Settings  $settings `
+        -Principal $principal | Out-Null
+}
 
 Write-Host "  Done." -ForegroundColor Green
 
@@ -71,10 +95,15 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 Write-Host " Installation complete!" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Installed to  : $installDir"
-Write-Host "  Scheduled task: $taskName  (runs at logon + every 5 min)"
+if ($alwaysOn) {
+    Write-Host "  Mode          : Always-on  (starts at logon + every 5 min)" -ForegroundColor Green
+    Write-Host "  Open Spotify normally — the muter runs automatically." -ForegroundColor Green
+} else {
+    Write-Host "  Mode          : Manual  (runs only when launched via SpotifyLauncher.ps1)" -ForegroundColor Yellow
+    Write-Host "  Open Spotify via SpotifyLauncher.ps1 to activate the muter." -ForegroundColor Yellow
+    Write-Host "  Shortcut path : $installDir\SpotifyLauncher.ps1"
+}
 Write-Host "  Stats file    : $installDir\SpotifyMuteStats.json  (created on first mute)"
 Write-Host "  Activity log  : $installDir\SpotifyAdMuter.log"
-Write-Host ""
-Write-Host " Open Spotify and the muter starts automatically." -ForegroundColor Green
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
 Write-Host ""

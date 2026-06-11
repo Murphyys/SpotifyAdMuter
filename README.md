@@ -22,12 +22,13 @@ cd SpotifyAdMuter
 .\install.ps1
 ```
 
-The installer:
-1. Copies the scripts to `%LOCALAPPDATA%\SpotifyMute\`
-2. Registers a scheduled task that starts at logon and re-checks every 5 minutes
-3. Runs a quick CoreAudio verification
+The installer copies the scripts to `%LOCALAPPDATA%\SpotifyMute\`, runs a CoreAudio verification, then asks which mode you want:
 
-That's it — open Spotify and it starts working automatically.
+### Mode 1 — Always-on
+The muter starts automatically at logon and re-checks every 5 minutes. Open Spotify normally — nothing else to do.
+
+### Mode 2 — Manual (SpotifyLauncher)
+No auto-start. The muter only runs when you open Spotify through `SpotifyLauncher.ps1`. Create a shortcut to that file and use it instead of the regular Spotify shortcut.
 
 > **Execution policy error?**
 > Run this once, then retry:
