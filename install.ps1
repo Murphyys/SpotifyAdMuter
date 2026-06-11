@@ -1,10 +1,9 @@
 #Requires -Version 5.1
-# install.ps1 — Installs SpotifyAdMuter and registers the scheduled task.
-# No administrator rights required. Run from the cloned repo folder.
+# install.ps1 — Installs SpotifyAdMuter. No administrator rights required.
+# Run from the cloned repo folder:  .\install.ps1
 
 $ErrorActionPreference = 'Stop'
 $installDir = Join-Path $env:LOCALAPPDATA 'SpotifyMute'
-$taskName   = 'SpotifyAdMuter'
 $srcDir     = $PSScriptRoot
 
 Write-Host ""
@@ -12,21 +11,21 @@ Write-Host "SpotifyAdMuter Installer" -ForegroundColor Cyan
 Write-Host "========================" -ForegroundColor Cyan
 Write-Host ""
 
-# ── 0. Choose mode ────────────────────────────────────────────────────────────
+# -- 0. Choose mode --------------------------------------------------------------
 Write-Host "Choose install mode:"
 Write-Host ""
-Write-Host "  [1] Always-on   — starts automatically at logon and every 5 minutes"
-Write-Host "                    Spotify opens normally, muter runs in the background"
+Write-Host "  [1] Always-on   - starts automatically at logon; the muter runs"
+Write-Host "                    whenever Spotify is open. Open Spotify normally."
 Write-Host ""
-Write-Host "  [2] Manual      — only runs when you open Spotify via SpotifyLauncher.ps1"
-Write-Host "                    No auto-start; you control when it runs"
+Write-Host "  [2] Manual      - runs only when you open Spotify via the"
+Write-Host "                    'Spotify Launcher' shortcut. You control when it runs."
 Write-Host ""
 do {
     $choice = Read-Host "Enter 1 or 2"
 } while ($choice -ne '1' -and $choice -ne '2')
 $alwaysOn = ($choice -eq '1')
 
-# ── 1. Copy scripts to stable install location ────────────────────────────────
+# -- 1. Copy scripts to a stable install location --------------------------------
 Write-Host ""
 Write-Host "Copying files to $installDir ..."
 if (-not (Test-Path $installDir)) {
@@ -34,72 +33,56 @@ if (-not (Test-Path $installDir)) {
 }
 Copy-Item "$srcDir\SpotifyAdMuter.ps1"  "$installDir\SpotifyAdMuter.ps1"  -Force
 Copy-Item "$srcDir\SpotifyLauncher.ps1" "$installDir\SpotifyLauncher.ps1" -Force
-Copy-Item "$srcDir\launcher.vbs"        "$installDir\launcher.vbs"        -Force
+Copy-Item "$srcDir\SpotifyWatcher.ps1"  "$installDir\SpotifyWatcher.ps1"  -Force
 Write-Host "  Done." -ForegroundColor Green
 
-# ── 2. Register scheduled task ────────────────────────────────────────────────
-Write-Host "Registering scheduled task '$taskName' ..."
-
-$action = New-ScheduledTaskAction `
-    -Execute  'conhost.exe' `
-    -Argument "--headless powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$installDir\SpotifyAdMuter.ps1`""
-
-$settings = New-ScheduledTaskSettingsSet `
-    -MultipleInstances IgnoreNew `
-    -ExecutionTimeLimit (New-TimeSpan -Hours 0)
-
-$principal = New-ScheduledTaskPrincipal `
-    -UserId    $env:USERNAME `
-    -LogonType Interactive `
-    -RunLevel  Limited
-
-$existing = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-if ($existing) {
-    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
-}
-
-if ($alwaysOn) {
-    $triggerLogon  = New-ScheduledTaskTrigger -AtLogOn
-    $triggerRepeat = New-ScheduledTaskTrigger -RepetitionInterval (New-TimeSpan -Minutes 5) -Once -At (Get-Date)
-    Register-ScheduledTask `
-        -TaskName  $taskName `
-        -Action    $action `
-        -Trigger   @($triggerLogon, $triggerRepeat) `
-        -Settings  $settings `
-        -Principal $principal | Out-Null
-} else {
-    # Manual mode: task registered but no triggers — SpotifyLauncher calls it on demand
-    Register-ScheduledTask `
-        -TaskName  $taskName `
-        -Action    $action `
-        -Settings  $settings `
-        -Principal $principal | Out-Null
-}
-
-Write-Host "  Done." -ForegroundColor Green
-
-# ── 3. Desktop shortcut ──────────────────────────────────────────────────────
-Write-Host "Creating Desktop shortcut ..."
-try {
-    $desktop      = [Environment]::GetFolderPath('Desktop')
-    $spotifyExe   = "$env:LOCALAPPDATA\Microsoft\WindowsApps\Spotify.exe"
-    if (-not (Test-Path $spotifyExe)) { $spotifyExe = "$env:APPDATA\Spotify\Spotify.exe" }
-    $iconLocation = if (Test-Path $spotifyExe) { "$spotifyExe,0" } else { "powershell.exe,0" }
-
+# Shared helper: create a hidden shortcut that runs a script via conhost --headless
+# (runs PowerShell with no visible console window, and no AV-prone .vbs wrapper).
+function New-HiddenShortcut {
+    param([string]$Path, [string]$ScriptName, [string]$IconLocation)
     $shell = New-Object -ComObject WScript.Shell
-    $sc = $shell.CreateShortcut("$desktop\Spotify Launcher.lnk")
-    $sc.TargetPath       = "C:\Windows\System32\wscript.exe"
-    $sc.Arguments        = "$installDir\launcher.vbs"
+    $sc = $shell.CreateShortcut($Path)
+    $sc.TargetPath       = "$env:WINDIR\System32\conhost.exe"
+    $sc.Arguments        = "--headless powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$installDir\$ScriptName`""
     $sc.WorkingDirectory = $installDir
-    $sc.IconLocation     = $iconLocation
-    $sc.WindowStyle      = 1
+    if ($IconLocation) { $sc.IconLocation = $IconLocation }
+    $sc.WindowStyle      = 7
     $sc.Save()
-    Write-Host "  Done — 'Spotify Launcher' shortcut on Desktop." -ForegroundColor Green
-} catch {
-    Write-Host "  Could not create shortcut: $_" -ForegroundColor Yellow
 }
 
-# ── 4. Verify CoreAudio interop ───────────────────────────────────────────────
+# Spotify icon for the shortcut(s), if we can find it
+$spotifyExe = "$env:LOCALAPPDATA\Microsoft\WindowsApps\Spotify.exe"
+if (-not (Test-Path $spotifyExe)) { $spotifyExe = "$env:APPDATA\Spotify\Spotify.exe" }
+$iconLocation = if (Test-Path $spotifyExe) { "$spotifyExe,0" } else { "powershell.exe,0" }
+
+# -- 2. Desktop launch shortcut --------------------------------------------------
+Write-Host "Creating 'Spotify Launcher' desktop shortcut ..."
+try {
+    $desktop = [Environment]::GetFolderPath('Desktop')
+    New-HiddenShortcut -Path "$desktop\Spotify Launcher.lnk" -ScriptName 'SpotifyLauncher.ps1' -IconLocation $iconLocation
+    Write-Host "  Done." -ForegroundColor Green
+} catch {
+    Write-Host "  Could not create desktop shortcut: $_" -ForegroundColor Yellow
+}
+
+# -- 3. Always-on: Startup-folder watcher shortcut -------------------------------
+$startupLnk = Join-Path ([Environment]::GetFolderPath('Startup')) 'SpotifyAdMuter (always-on).lnk'
+if ($alwaysOn) {
+    Write-Host "Enabling always-on (Startup shortcut) ..."
+    try {
+        New-HiddenShortcut -Path $startupLnk -ScriptName 'SpotifyWatcher.ps1' -IconLocation $iconLocation
+        # Start it now so the user does not have to log off/on first
+        Start-Process $startupLnk
+        Write-Host "  Done." -ForegroundColor Green
+    } catch {
+        Write-Host "  Could not enable always-on: $_" -ForegroundColor Yellow
+    }
+} else {
+    # Manual mode: make sure no stale always-on shortcut is left behind
+    if (Test-Path $startupLnk) { Remove-Item $startupLnk -Force }
+}
+
+# -- 4. Verify CoreAudio interop -------------------------------------------------
 Write-Host ""
 Write-Host "Running CoreAudio verification (Spotify does not need to be open) ..."
 try {
@@ -108,24 +91,23 @@ try {
     Write-Host "  CoreAudio test passed." -ForegroundColor Green
 } catch {
     Write-Host "  CoreAudio test failed: $_" -ForegroundColor Yellow
-    Write-Host "  The muter may still work — muting is skipped if no Spotify audio session exists."
+    Write-Host "  The muter may still work - muting is skipped if no Spotify audio session exists."
 }
 
-# ── 5. Summary ────────────────────────────────────────────────────────────────
+# -- 5. Summary ------------------------------------------------------------------
 Write-Host ""
-Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
+Write-Host "================================================" -ForegroundColor Cyan
 Write-Host " Installation complete!" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Installed to  : $installDir"
 if ($alwaysOn) {
-    Write-Host "  Mode          : Always-on  (starts at logon + every 5 min)" -ForegroundColor Green
-    Write-Host "  Open Spotify normally — the muter runs automatically." -ForegroundColor Green
+    Write-Host "  Mode          : Always-on (starts at logon)" -ForegroundColor Green
+    Write-Host "  Open Spotify normally - the muter starts itself." -ForegroundColor Green
 } else {
-    Write-Host "  Mode          : Manual  (runs only when launched via SpotifyLauncher.ps1)" -ForegroundColor Yellow
-    Write-Host "  Open Spotify via SpotifyLauncher.ps1 to activate the muter." -ForegroundColor Yellow
-    Write-Host "  Shortcut path : $installDir\SpotifyLauncher.ps1"
+    Write-Host "  Mode          : Manual" -ForegroundColor Yellow
+    Write-Host "  Use the 'Spotify Launcher' desktop shortcut to open Spotify + muter." -ForegroundColor Yellow
 }
 Write-Host "  Stats file    : $installDir\SpotifyMuteStats.json  (created on first mute)"
 Write-Host "  Activity log  : $installDir\SpotifyAdMuter.log"
-Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Cyan
+Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""

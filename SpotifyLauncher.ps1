@@ -1,6 +1,6 @@
 # SpotifyLauncher.ps1
-# Opens Spotify, waits for its process to appear, then starts the ad-muter.
-# Target of the Desktop shortcut (via launcher.vbs).
+# Opens Spotify, waits for its process to appear, then starts the ad-muter (hidden).
+# Target of the Desktop shortcut (run hidden via conhost --headless).
 
 # Microsoft Store version is a 0-byte stub — launch via URI instead.
 # Classic installer registers the same spotify: protocol, so this works for both.
@@ -24,4 +24,8 @@ for ($i = 0; $i -lt 60; $i++) {
     Start-Sleep -Milliseconds 500
 }
 
-Start-ScheduledTask -TaskName 'SpotifyAdMuter'
+# Launch the ad-muter hidden. Its single-instance mutex prevents duplicates,
+# so clicking the shortcut again while it's already running is harmless.
+$muter = Join-Path $PSScriptRoot 'SpotifyAdMuter.ps1'
+Start-Process powershell.exe -WindowStyle Hidden -ArgumentList `
+    '-NoProfile','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File',$muter

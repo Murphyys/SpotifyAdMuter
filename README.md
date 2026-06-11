@@ -4,7 +4,7 @@ Mutes Spotify during ads on Windows — automatically, silently, without touchin
 
 ## What it does
 
-SpotifyAdMuter runs as a background scheduled task. Every second, it reads Spotify's window title. Real tracks always show **"Artist - Song"** (with a dash). During ads the title changes to something else — "Advertisement", "Spotify Free", a promo line. When that happens, SpotifyAdMuter mutes **only Spotify's audio session** and unmutes the moment music resumes.
+SpotifyAdMuter runs as a hidden background process. Every second, it reads Spotify's window title. Real tracks always show **"Artist - Song"** (with a dash). During ads the title changes to something else — "Advertisement", "Spotify Free", a promo line. When that happens, SpotifyAdMuter mutes **only Spotify's audio session** and unmutes the moment music resumes.
 
 No system volume change. No Spotify UI interaction. Just silence.
 
@@ -22,13 +22,15 @@ cd SpotifyAdMuter
 .\install.ps1
 ```
 
-The installer copies the scripts to `%LOCALAPPDATA%\SpotifyMute\`, runs a CoreAudio verification, then asks which mode you want:
+The installer copies the scripts to `%LOCALAPPDATA%\SpotifyMute\`, creates a **"Spotify Launcher"** desktop shortcut, runs a CoreAudio verification, then asks which mode you want:
 
 ### Mode 1 — Always-on
-The muter starts automatically at logon and re-checks every 5 minutes. Open Spotify normally — nothing else to do.
+A small watcher starts automatically at logon (a hidden shortcut in your Startup folder). Whenever Spotify is open, it makes sure the muter is running. Open Spotify any way you like — nothing else to do.
 
-### Mode 2 — Manual (SpotifyLauncher)
-No auto-start. The muter only runs when you open Spotify through `SpotifyLauncher.ps1`. Create a shortcut to that file and use it instead of the regular Spotify shortcut.
+### Mode 2 — Manual
+No auto-start. The muter only runs when you open Spotify through the **"Spotify Launcher"** desktop shortcut, which opens Spotify and starts the muter together. Use it instead of the regular Spotify shortcut.
+
+> Both modes are window-free — shortcuts launch PowerShell hidden via `conhost --headless`, so nothing flashes on screen.
 
 > **Execution policy error?**
 > Run this once, then retry:
@@ -42,7 +44,9 @@ No auto-start. The muter only runs when you open Spotify through `SpotifyLaunche
 
 **Audio muting:** Uses the Windows CoreAudio COM API (`IAudioSessionManager2`) to mute Spotify's audio session directly. No other apps or your system volume are affected.
 
-**Single instance:** A named mutex prevents duplicate processes. The task fires every 5 minutes but exits immediately if an instance is already running.
+**Single instance:** A named mutex prevents duplicate processes — launching again while the muter is already running is a harmless no-op.
+
+**Hidden execution:** Shortcuts run PowerShell through `conhost --headless`, and the muter is spawned with `-WindowStyle Hidden`, so no console window ever appears.
 
 ## Stats
 
@@ -64,7 +68,7 @@ After the first mute event, a stats file is created at:
 .\uninstall.ps1
 ```
 
-Removes the scheduled task and the installed files. You'll be asked whether to keep your stats file.
+Stops any running process, removes the shortcuts and the installed files. You'll be asked whether to keep your stats file.
 
 ## FAQ
 
