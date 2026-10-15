@@ -1,24 +1,24 @@
 # CLAUDE.md — SpotifyAdMuter (project-specific rules)
 
-> กฎร่วมของทุก dev project อยู่ที่ `../CLAUDE.md` — ไฟล์นี้เก็บเฉพาะกฎของโปรเจกต์นี้ · รายละเอียดการใช้งาน/ติดตั้ง → `README.md`
+> Shared rules for all dev projects are in `../CLAUDE.md` — this file holds only this project's rules · usage/install details → `README.md`
 
 ## What this is
-mute เฉพาะ audio session ของ Spotify ตอนโฆษณาบน Windows — อ่าน window title ทุก 1 วิ (เพลงจริง = "Artist - Song" มีขีด, โฆษณา = อย่างอื่น) แล้ว mute/unmute ผ่าน CoreAudio COM ไม่แตะ system volume
+Mutes only Spotify's audio session during ads on Windows — reads the window title every 1 s (a real track = "Artist - Song" with a dash, an ad = anything else) then mutes/unmutes via CoreAudio COM without touching the system volume
 
 ## Stack
-- PowerShell 5.1 ล้วน (ไม่มี dependency ภายนอก) + CoreAudio COM (per-session volume ของ Spotify)
-- 3 สคริปต์: `SpotifyAdMuter.ps1` (ตัว mute) · `SpotifyLauncher.ps1` (เปิด Spotify + muter จาก shortcut) · `SpotifyWatcher.ps1` (always-on mode: ดูว่า Spotify เปิดอยู่ไหมแล้วคอยสั่ง muter)
-- v1.1+ ใช้ conhost shortcut + hidden spawn แทน scheduled task / `launcher.vbs` (ถอดออกแล้ว)
+- Pure PowerShell 5.1 (no external dependencies) + CoreAudio COM (Spotify's per-session volume)
+- 3 scripts: `SpotifyAdMuter.ps1` (the muter) · `SpotifyLauncher.ps1` (opens Spotify + the muter from a shortcut) · `SpotifyWatcher.ps1` (always-on mode: watches whether Spotify is open and then commands the muter)
+- v1.1+ uses a conhost shortcut + hidden spawn instead of a scheduled task / `launcher.vbs` (removed)
 
 ## Running / Install
-- `.\install.ps1` → copy ไป `%LOCALAPPDATA%\SpotifyMute\` + สร้าง shortcut "Spotify Launcher" + ถาม mode (1 always-on / 2 manual) · `.\uninstall.ps1` ถอด
-- ทดสอบจริงต้องเปิด Spotify desktop แล้วรอโฆษณา — ไม่มี unit test; ยืนยันด้วย `SpotifyAdMuter.log` / `SpotifyMuteStats.json` (ทั้งคู่ gitignore แล้ว ห้าม commit)
+- `.\install.ps1` → copies to `%LOCALAPPDATA%\SpotifyMute\` + creates the "Spotify Launcher" shortcut + asks for the mode (1 always-on / 2 manual) · `.\uninstall.ps1` removes it
+- Real testing requires opening the Spotify desktop app and waiting for an ad — there are no unit tests; verify with `SpotifyAdMuter.log` / `SpotifyMuteStats.json` (both gitignored, never commit)
 
 ## Conventions
-- โค้ดต้องรันได้บน PowerShell 5.1 (ไม่ใช้ syntax ของ PowerShell 7 เช่น `&&`, `??`, ternary)
-- repo GitHub = `Murphyys/SpotifyAdMuter` (public) แต่โฟลเดอร์ local ชื่อ `SpotifyMute` — อย่าเปลี่ยนชื่อโฟลเดอร์ (install path อ้างชื่อนี้)
-- แก้ logic ตรวจโฆษณาแล้วให้อัปเดต README § FAQ ด้วย (user-facing)
+- Code must run on PowerShell 5.1 (do not use PowerShell 7 syntax such as `&&`, `??`, ternary)
+- The GitHub repo = `Murphyys/SpotifyAdMuter` (public) but the local folder is named `SpotifyMute` — do not rename the folder (the install path references this name)
+- After changing the ad-detection logic, also update README § FAQ (user-facing)
 
 ## Pending / Known issues
-- README เป็น English ล้วน — ยังไม่ตรงมาตรฐาน dev (header อังกฤษ/body ไทย) ตั้งใจคงไว้ก่อนเพราะ repo public มีคนนอกอ่าน · ถ้าจะแปลงให้ทำเป็น README ไทยแยกไฟล์ ไม่ทับของเดิม
-- ไม่มีสถานะค้างอื่น ณ 2026-10-08 (v1.1.1 verified บนเครื่องจริง)
+- README is entirely English — does not yet match the dev standard (English headers/Thai body); intentionally left as is because the repo is public and read by outsiders · if converting, make a separate Thai README file and do not overwrite the existing one
+- No other pending items as of 2026-10-08 (v1.1.1 verified on a real machine)
