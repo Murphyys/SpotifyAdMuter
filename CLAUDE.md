@@ -19,6 +19,12 @@ Mutes only Spotify's audio session during ads on Windows — reads the window ti
 - The GitHub repo = `Murphyys/SpotifyAdMuter` (public) but the local folder is named `SpotifyMute` — do not rename the folder (the install path references this name)
 - After changing the ad-detection logic, also update README § FAQ (user-facing)
 
+## Credentials & access
+
+> What this project holds or uses, by name only (never values). Revoke from the last column. Every Murphyys repo can also be read (and have issues opened) by the dashboard's fine-grained PAT `hermes-dashboard` — see hermes-jobs. Adding or removing a secret → update this table in the same commit.
+
+None — pure PowerShell + Windows audio calls, no keys.
+
 ## Pending / Known issues
 
 _Nothing pending._
