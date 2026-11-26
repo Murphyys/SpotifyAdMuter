@@ -20,5 +20,12 @@ Mutes only Spotify's audio session during ads on Windows — reads the window ti
 - After changing the ad-detection logic, also update README § FAQ (user-facing)
 
 ## Pending / Known issues
+
+_Nothing pending._
+
+## Gotchas
+
+> Permanent rules and caveats moved out of Pending on 2026-11-26: they never close, so they don't belong on the dashboard's pending list.
+
 - README is entirely English — does not yet match the dev standard (English headers/Thai body); intentionally left as is because the repo is public and read by outsiders · if converting, make a separate Thai README file and do not overwrite the existing one
-- No other pending items as of 2026-10-08 (v1.1.1 verified on a real machine)
+
